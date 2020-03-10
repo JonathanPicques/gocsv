@@ -65,6 +65,10 @@ func getFieldInfos(rType reflect.Type, parentIndexChain []int) []fieldInfo {
 		copy(cpy, parentIndexChain)
 		indexChain := append(cpy, i)
 
+		fieldTag := field.Tag.Get("csv")
+		if fieldTag == "-" {
+			continue
+		}
 		// if the field is a pointer to a struct, follow the pointer then create fieldinfo for each field
 		if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
 			// unless it implements marshalText or marshalCSV. Structs that implement this
@@ -82,13 +86,12 @@ func getFieldInfos(rType reflect.Type, parentIndexChain []int) []fieldInfo {
 			}
 		}
 
-		// if the field is an embedded struct, ignore the csv tag
-		if field.Anonymous {
+		// skips including the upper-level struct name unless a csv tag is specified
+		if field.Anonymous && fieldTag == "" {
 			continue
 		}
 
 		fieldInfo := fieldInfo{IndexChain: indexChain}
-		fieldTag := field.Tag.Get("csv")
 		fieldTags := strings.Split(fieldTag, TagSeparator)
 		filteredTags := []string{}
 		for _, fieldTagEntry := range fieldTags {
